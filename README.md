@@ -1,2 +1,3 @@
-# IS_Labs
-Repository for the laboratory exercises for the subject Integrated Systems at FSCE
+# EShop Application developed using C# in Visual Studio
+A repo for an e-shop application using the onion architecture.
+Developed using C# in Visual Studio.
