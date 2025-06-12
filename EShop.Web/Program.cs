@@ -1,7 +1,12 @@
 using EShop.Domain.Identity;
-using EShop.Web.Data;
+using EShop.Repository;
+using EShop.Repository.Implementation;
+using EShop.Repository.Interface;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
+using NuGet.Protocol.Core.Types;
+using EShop.Service.Interface;
+using EShop.Service.Implementation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +19,12 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 builder.Services.AddDefaultIdentity<EShopApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
     .AddEntityFrameworkStores<ApplicationDbContext>();
 builder.Services.AddControllersWithViews();
+
+builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+
+builder.Services.AddTransient<IProductService, ProductService>();
+builder.Services.AddTransient<IShoppingCartService, ShoppingCartService>();
+
 
 var app = builder.Build();
 

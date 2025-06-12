@@ -1,40 +1,32 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using EShop.Domain.DomainModels;
+using EShop.Domain.DTO;
+using EShop.Service.Interface;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using EShop.Domain.DomainModels;
-using EShop.Web.Data;
+using System.Security.Claims;
 
 namespace EShop.Web.Controllers
 {
+    //TODO: fix product image in create
     public class ProductsController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IProductService _productService;
 
-        public ProductsController(ApplicationDbContext context)
+        public ProductsController(IProductService productService)
         {
-            _context = context;
+            _productService=productService;
         }
 
+
         // GET: Products
-        public async Task<IActionResult> Index()
+        public IActionResult Index()
         {
-            return View(await _context.Product.ToListAsync());
+            return View(_productService.GetAll());
         }
 
         // GET: Products/Details/5
-        public async Task<IActionResult> Details(Guid? id)
+        public IActionResult Details(Guid id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var product = await _context.Product
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var product = _productService.GetById(id);
             if (product == null)
             {
                 return NotFound();
@@ -54,27 +46,20 @@ namespace EShop.Web.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,ProductName,ProductDescription,ProductPrice,ProductRating")] Product product)
+        public IActionResult Create([Bind("ProductName,ProductDescription,ProductPrice,ProductRating")] Product product)
         {
             if (ModelState.IsValid)
             {
-                product.Id = Guid.NewGuid();
-                _context.Add(product);
-                await _context.SaveChangesAsync();
+                _productService.Insert(product);
                 return RedirectToAction(nameof(Index));
             }
             return View(product);
         }
 
         // GET: Products/Edit/5
-        public async Task<IActionResult> Edit(Guid? id)
+        public IActionResult Edit(Guid id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var product = await _context.Product.FindAsync(id);
+            var product = _productService.GetById(id);
             if (product == null)
             {
                 return NotFound();
@@ -87,46 +72,22 @@ namespace EShop.Web.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("Id,ProductName,ProductDescription,ProductPrice,ProductRating")] Product product)
+        public IActionResult Edit(Guid id, [Bind("Id,ProductName,ProductDescription,ProductPrice,ProductRating")] Product product)
         {
             if (id != product.Id)
             {
                 return NotFound();
             }
 
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    _context.Update(product);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!ProductExists(product.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
-            }
+            _productService.Update(product);
             return View(product);
         }
 
         // GET: Products/Delete/5
-        public async Task<IActionResult> Delete(Guid? id)
+        public async Task<IActionResult> Delete(Guid id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
 
-            var product = await _context.Product
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var product = _productService.GetById(id);
             if (product == null)
             {
                 return NotFound();
@@ -138,21 +99,25 @@ namespace EShop.Web.Controllers
         // POST: Products/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(Guid id)
+        public IActionResult DeleteConfirmed(Guid id)
         {
-            var product = await _context.Product.FindAsync(id);
-            if (product != null)
-            {
-                _context.Product.Remove(product);
-            }
-
-            await _context.SaveChangesAsync();
+            _productService.DeleteById(id);
             return RedirectToAction(nameof(Index));
         }
 
-        private bool ProductExists(Guid id)
+        public IActionResult AddProductToCard(Guid id)
         {
-            return _context.Product.Any(e => e.Id == id);
+            AddToCartDTO model = _productService.GetSelectedShoppingCartProduct(id);
+            return View(model);
         }
+
+        [HttpPost]
+        public IActionResult AddProductToCard(AddToCartDTO model)
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            _productService.AddProductToSoppingCart(model.SelectedProductId, Guid.Parse(userId), model.Quantity);
+            return RedirectToAction(nameof(Index));
+        }
+
     }
 }
