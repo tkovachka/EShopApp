@@ -1,6 +1,7 @@
 ﻿using EShop.Domain.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using EShop.Domain.DomainModels;
 
 namespace EShop.Web.Data
 {
@@ -10,5 +11,6 @@ namespace EShop.Web.Data
             : base(options)
         {
         }
+        public DbSet<EShop.Domain.DomainModels.Product> Product { get; set; } = default!;
     }
 }
